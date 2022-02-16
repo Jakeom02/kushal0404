@@ -52,7 +52,8 @@ app.post("/display", (req, res) =>
     ({seckey_base}= conversions(from));
     //Encrypted from bs58
     ({ encrypted_sec_key, decrypted_sec_key } = await encryptions(seckey_base));
-     databaseOperations(name, surname, email, account_type, firstPublicKey,encrypted_sec_key, decrypted_sec_key,res);
+    let db_operation_obj={name:name,surname:surname,email:email,account_type:account_type,firstPublicKey:firstPublicKey,encrypted_sec_key:encrypted_sec_key,decrypted_sec_key:decrypted_sec_key} 
+    databaseOperations(db_operation_obj,res);
       //console.log(response);
   })();
 
@@ -126,14 +127,14 @@ async function encryptions(seckey_base)
   return { encrypted_sec_key, decrypted_sec_key };
 }
 
-async function databaseOperations(name, surname, email, account_type, firstPublicKey,encrypted_sec_key, decrypted_sec_key,res) 
+async function databaseOperations(db_operation_obj,res) 
 {
   var returnVar = {};
   MongoClient.connect(url, function(err, db) {
     if (err)
         throw err;
     var dbo = db.db("Inherit");
-    var myobj = { name: name, surname: surname, email: email, account_type: account_type, publicKey: firstPublicKey, secret_key: encrypted_sec_key };
+    var myobj = { name: db_operation_obj.name, surname: db_operation_obj.surname, email: db_operation_obj.email, account_type: db_operation_obj.account_type, publicKey: db_operation_obj.firstPublicKey, secret_key: db_operation_obj.encrypted_sec_key };
 
     var firstPromise = () => 
     {
@@ -161,7 +162,7 @@ async function databaseOperations(name, surname, email, account_type, firstPubli
       findAccount(myobj.email, dbo).then(function(response)
       {
         returnVar = response;
-        printData(response.db_mail, response.db_name, response.db_surname, response.db_pubkey,decrypted_sec_key,res);
+        printData(response,db_operation_obj.decrypted_sec_key,res);
         //res.send(finalString);
         //res.send("Done");
         return response;
@@ -171,25 +172,25 @@ async function databaseOperations(name, surname, email, account_type, firstPubli
   return returnVar;
 }
 
-function printData(db_mail, db_name, db_surname, db_pubkey, decrypted_sec_key,res)
+function printData(response, decrypted_sec_key,res)
 {
   let finalString ="<h1>Account Created Successfully!</h1>";
   finalString += "</br>";
   finalString += "Name";
   finalString += "</br>";
-  finalString += db_name;
+  finalString += response.db_name;
   finalString += "</br>";
   finalString += "Surname";
   finalString += "</br>";
-  finalString += db_surname;
+  finalString += response.db_surname;
   finalString += "</br>";
   finalString += "Email";
   finalString += "</br>";
-  finalString += db_mail;
+  finalString += response.db_mail;
   finalString += "</br>";
   finalString += "Public Key";
   finalString += "</br>";
-  finalString += db_pubkey;
+  finalString += response.db_pubkey;
   finalString += "</br>";
   finalString += "Secret Key";
   finalString += "</br>";
